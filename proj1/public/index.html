@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, iznitial-scale=1" />
+<title>Lista de Usuários</title>
+<style>
+  body { font-family: Arial, sans-serif; margin: 20px; }
+  table { border-collapse: collapse; width: 100%; margin-top: 15px; }
+  th, td { border: 1px solid #ccccccf3; padding: 8px; text-align: left; }
+  th { background-color: #8400ff; color: white; }
+  input, button { padding: 6px 10px; margin-right: 5px; }
+  .senha-form { margin-top: 20px; }
+  .message { margin-top: 10px; color: green; }
+  .error { color: red; }
+</style>
+</head>
+<body>
+
+<h1>Usuários</h1>
+
+<div>
+  <input id="searchInput" type="text" placeholder="Pesquisar por nome..." />
+  <button id="searchBtn">Pesquisar</button>
+  <button id="resetBtn">Mostrar todos</button>
+</div>
+
+<table>
+  <thead>
+    <tr><th>ID</th><th>Nome</th><th>Email</th><th>Ações</th></tr>
+  </thead>
+  <tbody id="userTableBody"></tbody>
+</table>
+
+<div class="senha-form">
+  <h2>Trocar senha do usuário</h2>
+  <input id="userIdInput" type="number" placeholder="ID do usuário" />
+  <input id="newPasswordInput" type="password" placeholder="Nova senha" />
+  <button id="changePasswordBtn">Trocar senha</button>
+  <div id="passwordMessage"></div>
+</div>
+
+<script>
+  const apiBase = '/api/usuarios';
+
+  async function fetchUsers(url = `${apiBase}/`) {
+    const res = await fetch(url);
+    if (!res.ok) {
+      alert('Erro ao buscar usuários');
+      return [];
+    }
+    return await res.json();
+  }
+
+  function renderTable(users) {
+    const tbody = document.getElementById('userTableBody');
+    tbody.innerHTML = '';
+    if (users.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="4">Nenhum usuário encontrado</td></tr>';
+      return;
+    }
+    users.forEach(user => {
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td>${user.id}</td>
+        <td>${user.nome}</td>
+        <td>${user.email}</td>
+        <td>
+          <button onclick="deleteUser(${user.id})">Excluir</button>
+        </td>
+      `;
+      tbody.appendChild(tr);
+    });
+  }
+
+  async function loadAllUsers() {
+    const users = await fetchUsers();
+    renderTable(users);
+  }
+
+  async function searchUsers() {
+    const name = document.getElementById('searchInput').value.trim();
+    if (!name) {
+      alert('Digite um nome para pesquisar');
+      return;
+    }
+    const users = await fetchUsers(`${apiBase}/search/name?name=${encodeURIComponent(name)}`);
+    renderTable(users);
+  }
+
+  async function deleteUser(id) {
+    if (!confirm('Deseja realmente excluir o usuário?')) return;
+
+    const res = await fetch(`${apiBase}/${id}`, { method: 'DELETE' });
+    if (res.ok) {
+      alert('Usuário excluído');
+      loadAllUsers();
+    } else {
+      alert('Erro ao excluir usuário');
+    }
+  }
+
+  async function changePassword() {
+    const userId = document.getElementById('userIdInput').value;
+    const newPassword = document.getElementById('newPasswordInput').value;
+    const messageDiv = document.getElementById('passwordMessage');
+    messageDiv.textContent = '';
+    messageDiv.className = '';
+
+    if (!userId || !newPassword) {
+      messageDiv.textContent = 'Preencha ID e nova senha.';
+      messageDiv.className = 'error';
+      return;
+    }
+
+    if (newPassword.length < 6) {
+      messageDiv.textContent = 'Senha deve ter pelo menos 6 caracteres.';
+      messageDiv.className = 'error';
+      return;
+    }
+
+    const res = await fetch(`${apiBase}/${userId}/password`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ newPassword })
+    });
+
+    if (res.ok) {
+      messageDiv.textContent = 'Senha alterada com sucesso!';
+      messageDiv.className = 'message';
+      document.getElementById('userIdInput').value = '';
+      document.getElementById('newPasswordInput').value = '';
+    } else {
+      const err = await res.json();
+      messageDiv.textContent = err.message || 'Erro ao alterar senha.';
+      messageDiv.className = 'error';
+    }
+  }
+
+  document.getElementById('searchBtn').addEventListener('click', searchUsers);
+  document.getElementById('resetBtn').addEventListener('click', loadAllUsers);
+  document.getElementById('changePasswordBtn').addEventListener('click', changePassword);
+
+  // Carrega lista ao iniciar
+  loadAllUsers();
+</script>
+
+</body>
+</html>
