@@ -1,0 +1,31 @@
+body {
+  background: linear-gradient(to right, #e6f0ff, #f7fbff);
+  font-family: 'Segoe UI', sans-serif;
+}
+
+.card {
+  border-radius: 20px;
+}
+
+input.valid {
+  border: 2px solid #198754 !important; /* verde */
+  background-color: #e9fbe9;
+}
+
+input.invalid {
+  border: 2px solid #dc3545 !important; /* vermelho */
+  background-color: #ffecec;
+}
+
+.form-text {
+  font-size: 0.9rem;
+  font-weight: 500;
+}
+
+.form-text.valid-feedback {
+  color: #198754;
+}
+
+.form-text.invalid-feedback {
+  color: #dc3545;
+}
